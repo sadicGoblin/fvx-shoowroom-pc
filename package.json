@@ -1,0 +1,97 @@
+{
+  "name": "fvx-showroom-web",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "electron": "electron .",
+    "electron-dev": "concurrently --kill-others \"ng serve --port 4200\" \"node electron-dev.js\"",
+    "electron-build": "ng build --configuration=production && electron .",
+    "prebuild-electron": "node build-check.js",
+    "build-electron": "ng build --configuration=production --base-href=./ && electron-builder build --win",
+    "build-check": "node build-check.js",
+    "package": "electron-builder build --win",
+    "electron:package": "ng build --configuration production && electron-builder",
+    "electron:package:mac": "ng build --configuration production && electron-builder --mac",
+    "electron:package:win": "ng build --configuration production && electron-builder --win",
+    "electron:package:linux": "ng build --configuration production && electron-builder --linux"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^17.0.0",
+    "@angular/common": "^17.0.0",
+    "@angular/compiler": "^17.0.0",
+    "@angular/core": "^17.0.0",
+    "@angular/forms": "^17.0.0",
+    "@angular/platform-browser": "^17.0.0",
+    "@angular/platform-browser-dynamic": "^17.0.0",
+    "@angular/router": "^17.0.0",
+    "electron-store": "^11.0.2",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.14.2"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^17.0.0",
+    "@angular/cli": "^17.0.0",
+    "@angular/compiler-cli": "^17.0.0",
+    "@types/jasmine": "~5.1.0",
+    "concurrently": "^9.2.1",
+    "electron": "^38.3.0",
+    "electron-builder": "^26.0.12",
+    "jasmine-core": "~5.1.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.2.2",
+    "wait-on": "^9.0.1"
+  },
+  "build": {
+    "appId": "com.fvx.showroom",
+    "productName": "FVX Showroom",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/electron-store/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "src/assets/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FVX Showroom",
+      "installerIcon": "src/assets/icon.ico",
+      "uninstallerIcon": "src/assets/icon.ico",
+      "installerHeaderIcon": "src/assets/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "perMachine": true,
+      "runAfterFinish": false
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "src/assets/icon.png"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+const fs = require('fs');
+const path = require('path');
+
+// Crear directorio de assets si no existe
+const assetsDir = path.join(__dirname, 'src', 'assets');
+if (!fs.existsSync(assetsDir)) {
+  fs.mkdirSync(assetsDir, { recursive: true });
+}
+
+// Crear un SVG simple con las letras FVX
+const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con gradiente -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#007ACC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0056A3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo redondeado -->
+  <rect width="512" height="512" rx="80" fill="url(#grad1)"/>
+  
+  <!-- Texto FVX -->
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="180" font-weight="bold" 
+        fill="white" text-anchor="middle" letter-spacing="-5">FVX</text>
+  
+  <!-- Subtítulo -->
+  <text x="256" y="380" font-family="Arial, sans-serif" font-size="48" 
+        fill="rgba(255,255,255,0.8)" text-anchor="middle">SHOWROOM</text>
+  
+  <!-- Icono de pantalla/monitor pequeño -->
+  <rect x="200" y="100" width="112" height="70" rx="8" fill="none" stroke="white" stroke-width="8"/>
+  <rect x="230" y="170" width="52" height="20" rx="4" fill="white"/>
+</svg>`;
+
+// Guardar el SVG
+const svgPath = path.join(assetsDir, 'icon.svg');
+fs.writeFileSync(svgPath, svgContent);
+
+console.log('✅ Icono SVG creado en:', svgPath);
+console.log('\n📋 PRÓXIMOS PASOS:');
+console.log('1. Abre el archivo icon.svg y personalízalo si lo deseas');
+console.log('2. Convierte el SVG a formato ICO usando una de estas opciones:');
+console.log('   - Online: https://convertio.co/es/svg-ico/');
+console.log('   - Online: https://cloudconvert.com/svg-to-ico');
+console.log('   - Instala imagemagick: brew install imagemagick');
+console.log('     Luego ejecuta: convert -resize 256x256 -background transparent src/assets/icon.svg src/assets/icon.ico');
+console.log('\n3. Una vez tengas el icon.ico, vuelve a compilar con:');
+console.log('   npm run build-electron');
+console.log('\n💡 El instalador creará automáticamente un acceso directo en el escritorio con tu icono.');

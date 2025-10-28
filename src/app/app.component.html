@@ -1,0 +1,374 @@
+<div class="app-container">
+  <!-- Header -->
+  <header class="app-header">
+    <h1>Showroom Control</h1>
+    <button class="btn btn-primary" (click)="openAddScreenDialog()">
+      <span class="icon">+</span>
+      Agregar Pantalla
+    </button>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-info">
+      <span class="status-icon" [class.success]="selectedCount > 0">
+        {{ selectedCount > 0 ? '✓' : 'i' }}
+      </span>
+      <span class="status-message">{{ displayStatusMessage }}</span>
+    </div>
+    <div class="status-actions">
+      <button 
+        *ngIf="screens.length > 0" 
+        class="btn btn-text"
+        (click)="selectAllScreens()">
+        <span class="icon-small">{{ allSelected ? '☐' : '☑' }}</span>
+        {{ allSelected ? 'Deseleccionar' : 'Seleccionar todas' }}
+      </button>
+      <span class="screen-count">
+        {{ screens.length }} pantalla{{ screens.length !== 1 ? 's' : '' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Screens Grid -->
+    <div class="screens-section">
+      <div *ngIf="screens.length === 0" class="empty-state">
+        <div class="empty-icon">📺</div>
+        <p class="empty-title">No hay pantallas configuradas</p>
+        <p class="empty-subtitle">Toca + para agregar una pantalla</p>
+      </div>
+
+      <div *ngIf="screens.length > 0" class="screens-grid">
+        <div 
+          *ngFor="let screen of screens" 
+          class="screen-card"
+          [class.selected]="screen.isSelected"
+          (click)="toggleScreenSelection(screen)"
+          (contextmenu)="onScreenLongPress(screen); $event.preventDefault()">
+          <div class="screen-card-header">
+            <h3 class="screen-name">{{ screen.name }}</h3>
+            <div class="screen-icons">
+              <span class="icon-monitor">📺</span>
+              <span *ngIf="screen.isSelected" class="icon-check">✓</span>
+            </div>
+          </div>
+          <div class="screen-details">
+            <p class="screen-ip">IP  {{ screen.ip }}</p>
+            <div *ngIf="screen.lastContent" class="screen-content">
+              <span 
+                class="content-indicator" 
+                [style.background-color]="getContentColor(screen.lastContent)">
+              </span>
+              <span class="content-text">Contenido: {{ screen.lastContent }}</span>
+            </div>
+          </div>
+          <div class="screen-actions">
+            <button 
+              class="btn-icon" 
+              (click)="openEditScreenDialog(screen); $event.stopPropagation()"
+              title="Editar">
+              ✏️
+            </button>
+            <button 
+              class="btn-icon" 
+              (click)="openDeleteScreenDialog(screen); $event.stopPropagation()"
+              title="Eliminar">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Buttons -->
+    <div class="content-section">
+      <div class="content-header">
+        <h2>Contenido a Enviar</h2>
+        <div class="content-actions">
+          <button class="btn-icon" (click)="openReorderContentDialog()" title="Reordenar">
+            ☰
+          </button>
+          <button class="btn-icon" (click)="openAddContentDialog()" title="Agregar">
+            +
+          </button>
+        </div>
+      </div>
+      <div class="content-buttons">
+        <button 
+          *ngFor="let button of contentButtons"
+          class="content-btn"
+          [style.background-color]="button.color"
+          [style.color]="button.textColor"
+          (click)="sendContentToSelected(button)"
+          (contextmenu)="openEditContentDialog(button); $event.preventDefault()">
+          <span class="content-icon">●</span>
+          {{ button.name }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Screen Dialog -->
+<div class="dialog-overlay" *ngIf="showAddScreenDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3><span class="icon">+</span> Nueva Pantalla</h3>
+    </div>
+    <div class="dialog-content">
+      <div class="form-group">
+        <label>Nombre de la pantalla</label>
+        <input 
+          type="text" 
+          [(ngModel)]="screenForm.name" 
+          placeholder="ej: Pantalla Principal"
+          class="form-input">
+      </div>
+      <div class="form-group">
+        <label>ID de la pantalla (opcional)</label>
+        <input 
+          type="text" 
+          [(ngModel)]="screenForm.id" 
+          placeholder="Se generará automáticamente si está vacío"
+          class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Dirección IP</label>
+        <input 
+          type="text" 
+          [(ngModel)]="screenForm.ip" 
+          placeholder="ej: 192.168.1.100"
+          class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Contenido inicial (opcional)</label>
+        <div class="content-chips">
+          <button 
+            *ngFor="let button of contentButtons"
+            class="chip"
+            [class.selected]="screenForm.selectedInitialContent === button.name"
+            [style.background-color]="screenForm.selectedInitialContent === button.name ? button.color : 'transparent'"
+            [style.color]="screenForm.selectedInitialContent === button.name ? button.textColor : button.color"
+            [style.border-color]="button.color"
+            (click)="selectInitialContent(button.name)">
+            {{ button.name }}
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="addScreen()">Agregar Pantalla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Screen Dialog -->
+<div class="dialog-overlay" *ngIf="showEditScreenDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3><span class="icon">✏️</span> Editar Pantalla</h3>
+    </div>
+    <div class="dialog-content">
+      <div class="form-group">
+        <label>Nombre de la pantalla</label>
+        <input type="text" [(ngModel)]="screenForm.name" class="form-input">
+      </div>
+      <div class="form-group">
+        <label>ID de la pantalla</label>
+        <input type="text" [(ngModel)]="screenForm.id" class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Dirección IP</label>
+        <input type="text" [(ngModel)]="screenForm.ip" class="form-input">
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="updateScreen()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Screen Dialog -->
+<div class="dialog-overlay" *ngIf="showDeleteScreenDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Eliminar Pantalla</h3>
+    </div>
+    <div class="dialog-content">
+      <p>¿Estás seguro de eliminar "{{ currentScreen?.name }}"?</p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-danger" (click)="deleteScreen()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Multiple Screens Dialog -->
+<div class="dialog-overlay" *ngIf="showDeleteMultipleDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3><span class="icon">🗑️</span> Eliminar {{ selectedCount }} Pantalla{{ selectedCount > 1 ? 's' : '' }}</h3>
+    </div>
+    <div class="dialog-content">
+      <p>¿Estás seguro de eliminar las siguientes pantallas?</p>
+      <div class="screen-list">
+        <div *ngFor="let screen of selectedScreens" class="screen-list-item">
+          <span class="icon-small">📺</span>
+          {{ screen.name }} ({{ screen.ip }})
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-danger" (click)="deleteMultipleScreens()">Eliminar Pantallas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Content Dialog -->
+<div class="dialog-overlay" *ngIf="showAddContentDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Agregar Contenido</h3>
+    </div>
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de etiqueta</label>
+          <input type="text" [(ngModel)]="contentForm.name" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Comando a enviar</label>
+          <input type="text" [(ngModel)]="contentForm.command" class="form-input">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Color de fondo:</label>
+        <div class="color-picker">
+          <button 
+            *ngFor="let color of availableColors"
+            class="color-option"
+            [class.selected]="contentForm.color === color"
+            [style.background-color]="color"
+            (click)="selectColor(color)">
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="addContent()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Content Dialog -->
+<div class="dialog-overlay" *ngIf="showEditContentDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Editar Contenido</h3>
+    </div>
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de etiqueta</label>
+          <input type="text" [(ngModel)]="contentForm.name" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Comando a enviar</label>
+          <input type="text" [(ngModel)]="contentForm.command" class="form-input">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Color de fondo:</label>
+        <div class="color-picker">
+          <button 
+            *ngFor="let color of availableColors"
+            class="color-option"
+            [class.selected]="contentForm.color === color"
+            [style.background-color]="color"
+            (click)="selectColor(color)">
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="updateContent()">Guardar</button>
+      <button class="btn btn-danger" (click)="openDeleteContentDialog(currentContent!)">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Content Dialog -->
+<div class="dialog-overlay" *ngIf="showDeleteContentDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Eliminar Contenido</h3>
+    </div>
+    <div class="dialog-content">
+      <p>¿Estás seguro de eliminar "{{ currentContent?.name }}"?</p>
+      <p *ngIf="contentButtons.length <= 1" class="warning-text">
+        No puedes eliminar el último contenido disponible.
+      </p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button 
+        *ngIf="contentButtons.length > 1"
+        class="btn btn-danger" 
+        (click)="deleteContent()">
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reorder Content Dialog -->
+<div class="dialog-overlay" *ngIf="showReorderContentDialog" (click)="closeAllDialogs()">
+  <div class="dialog dialog-large" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3><span class="icon">☰</span> Reordenar Contenido</h3>
+    </div>
+    <div class="dialog-content">
+      <p class="help-text">Usa los botones para cambiar el orden de los elementos:</p>
+      <div class="reorder-list">
+        <div 
+          *ngFor="let button of tempContentButtons; let i = index" 
+          class="reorder-item">
+          <span 
+            class="content-indicator" 
+            [style.background-color]="button.color">
+          </span>
+          <span class="item-name">{{ button.name }}</span>
+          <span class="item-position">{{ i + 1 }}</span>
+          <div class="item-actions">
+            <button 
+              class="btn-icon-small" 
+              [disabled]="i === 0"
+              (click)="moveContentUp(i)"
+              title="Subir">
+              ▲
+            </button>
+            <button 
+              class="btn-icon-small" 
+              [disabled]="i === tempContentButtons.length - 1"
+              (click)="moveContentDown(i)"
+              title="Bajar">
+              ▼
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="saveContentOrder()">Guardar Orden</button>
+    </div>
+  </div>
+</div>
