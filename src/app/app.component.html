@@ -33,7 +33,7 @@
   <!-- Main Content -->
   <div class="main-content">
     <!-- Screens Grid -->
-    <div class="screens-section">
+    <div class="screens-section" *ngIf="showScreensSection">
       <div *ngIf="screens.length === 0" class="empty-state">
         <div class="empty-icon">📺</div>
         <p class="empty-title">No hay pantallas configuradas</p>
@@ -83,14 +83,17 @@
     </div>
 
     <!-- Content Buttons -->
-    <div class="content-section">
+    <div class="content-section" [class.expanded]="!showScreensSection">
       <div class="content-header">
         <h2>Contenido a Enviar</h2>
         <div class="content-actions">
-          <button class="btn-icon" (click)="openReorderContentDialog()" title="Reordenar">
+          <button class="btn-icon-large" (click)="showScreensSection = !showScreensSection" title="Pantallas">
+            📺
+          </button>
+          <button class="btn-icon-large" (click)="openReorderContentDialog()" title="Reordenar">
             ☰
           </button>
-          <button class="btn-icon" (click)="openAddContentDialog()" title="Agregar">
+          <button class="btn-icon-large" (click)="openAddContentDialog()" title="Agregar">
             +
           </button>
         </div>
@@ -103,8 +106,7 @@
           [style.color]="button.textColor"
           (click)="sendContentToSelected(button)"
           (contextmenu)="openEditContentDialog(button); $event.preventDefault()">
-          <span class="content-icon">●</span>
-          {{ button.name }}
+          {{ button.name | uppercase }}
         </button>
       </div>
     </div>

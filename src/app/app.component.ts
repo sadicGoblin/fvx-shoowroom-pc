@@ -16,6 +16,7 @@ export class AppComponent implements OnInit {
   screens: Screen[] = [];
   contentButtons: ContentButton[] = [];
   statusMessage = 'Bienvenido al Showroom';
+  showScreensSection = false;
   
   // Dialog states
   showAddScreenDialog = false;
