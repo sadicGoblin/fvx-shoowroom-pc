@@ -28,25 +28,22 @@ try {
   errors++;
 }
 
-// 2. Verificar que exista dist/
+// 2. Verificar que exista dist/ (opcional durante prebuild)
 console.log('\n2. Verificando build de Angular...');
 if (!fs.existsSync('dist')) {
-  console.error('   ❌ ERROR: No existe carpeta dist/. Ejecuta: ng build --configuration=production --base-href=./');
-  errors++;
+  console.log('   ℹ️  Carpeta dist/ no existe aún (se creará durante el build)');
 } else {
   console.log('   ✅ Carpeta dist/ existe');
   
   // Verificar dist/fvx-showroom-web/
   if (!fs.existsSync('dist/fvx-showroom-web')) {
-    console.error('   ❌ ERROR: No existe dist/fvx-showroom-web/');
-    errors++;
+    console.log('   ℹ️  Carpeta dist/fvx-showroom-web/ no existe (se creará durante el build)');
   } else {
     console.log('   ✅ Carpeta dist/fvx-showroom-web/ existe');
     
     // Verificar index.html
     if (!fs.existsSync('dist/fvx-showroom-web/index.html')) {
-      console.error('   ❌ ERROR: No existe dist/fvx-showroom-web/index.html');
-      errors++;
+      console.log('   ℹ️  index.html no existe aún (se creará durante el build)');
     } else {
       console.log('   ✅ index.html existe');
       
