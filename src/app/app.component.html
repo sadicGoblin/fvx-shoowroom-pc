@@ -2,9 +2,13 @@
   <!-- Header -->
   <header class="app-header">
     <h1>Showroom Control</h1>
-    <button class="btn btn-primary" (click)="openAddScreenDialog()">
-      <span class="icon">+</span>
-      Agregar Pantalla
+    <button 
+      class="btn" 
+      [class.btn-danger]="isUnlocked"
+      [class.btn-secondary]="!isUnlocked"
+      (click)="toggleLock()">
+      <span class="icon">{{ isUnlocked ? '🔓' : '🔒' }}</span>
+      {{ isUnlocked ? 'Bloquear Edición' : 'Desbloquear Edición' }}
     </button>
   </header>
 
@@ -34,10 +38,18 @@
   <div class="main-content">
     <!-- Screens Grid -->
     <div class="screens-section" *ngIf="showScreensSection">
+      <div class="screens-header" *ngIf="isUnlocked">
+        <button class="btn btn-primary" (click)="openAddScreenDialog()">
+          <span class="icon">+</span>
+          Agregar Pantalla
+        </button>
+      </div>
+      
       <div *ngIf="screens.length === 0" class="empty-state">
         <div class="empty-icon">📺</div>
         <p class="empty-title">No hay pantallas configuradas</p>
-        <p class="empty-subtitle">Toca + para agregar una pantalla</p>
+        <p class="empty-subtitle" *ngIf="isUnlocked">Toca + para agregar una pantalla</p>
+        <p class="empty-subtitle" *ngIf="!isUnlocked">Desbloquea el modo de edición para agregar pantallas</p>
       </div>
 
       <div *ngIf="screens.length > 0" class="screens-grid">
@@ -64,7 +76,7 @@
               <span class="content-text">Contenido: {{ screen.lastContent }}</span>
             </div>
           </div>
-          <div class="screen-actions">
+          <div class="screen-actions" *ngIf="isUnlocked">
             <button 
               class="btn-icon" 
               (click)="openEditScreenDialog(screen); $event.stopPropagation()"
@@ -86,8 +98,8 @@
     <div class="content-section" [class.expanded]="!showScreensSection">
       <div class="content-header">
         <h2>Contenido a Enviar</h2>
-        <div class="content-actions">
-          <button class="btn-icon-large" (click)="showScreensSection = !showScreensSection" title="Pantallas">
+        <div class="content-actions" *ngIf="isUnlocked">
+          <button class="btn-icon-large" (click)="toggleScreensSection()" title="Pantallas">
             📺
           </button>
           <button class="btn-icon-large" (click)="openReorderContentDialog()" title="Reordenar">
@@ -105,7 +117,7 @@
           [style.background-color]="button.color"
           [style.color]="button.textColor"
           (click)="sendContentToSelected(button)"
-          (contextmenu)="openEditContentDialog(button); $event.preventDefault()">
+          (contextmenu)="isUnlocked && openEditContentDialog(button); $event.preventDefault()">
           {{ button.name | uppercase }}
         </button>
       </div>
@@ -371,6 +383,36 @@
     <div class="dialog-actions">
       <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
       <button class="btn btn-primary" (click)="saveContentOrder()">Guardar Orden</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Dialog -->
+<div class="dialog-overlay" *ngIf="showPasswordDialog" (click)="closeAllDialogs()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3><span class="icon">🔒</span> Autenticación Requerida</h3>
+    </div>
+    <div class="dialog-content">
+      <p>Ingresa la contraseña para acceder a las funciones de configuración:</p>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input 
+          type="password" 
+          [(ngModel)]="passwordInput" 
+          (keyup.enter)="verifyPassword()"
+          placeholder="Ingresa la contraseña"
+          class="form-input"
+          [class.error]="passwordError"
+          autofocus>
+      </div>
+      <p *ngIf="passwordError" class="warning-text">
+        ⚠️ Contraseña incorrecta. Intenta nuevamente.
+      </p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="closeAllDialogs()">Cancelar</button>
+      <button class="btn btn-primary" (click)="verifyPassword()">Confirmar</button>
     </div>
   </div>
 </div>

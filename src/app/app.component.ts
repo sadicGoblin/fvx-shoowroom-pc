@@ -19,6 +19,7 @@ export class AppComponent implements OnInit {
   showScreensSection = false;
   
   // Dialog states
+  showPasswordDialog = false;
   showAddScreenDialog = false;
   showEditScreenDialog = false;
   showDeleteScreenDialog = false;
@@ -27,6 +28,13 @@ export class AppComponent implements OnInit {
   showEditContentDialog = false;
   showDeleteContentDialog = false;
   showReorderContentDialog = false;
+  
+  // Password protection
+  private readonly PASSWORD = '357357';
+  passwordInput = '';
+  passwordError = false;
+  pendingAction: (() => void) | null = null;
+  isUnlocked = false;
   
   // Form data
   screenForm = {
@@ -62,6 +70,13 @@ export class AppComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.screens = await this.storageService.loadScreens();
     this.contentButtons = await this.storageService.loadContent();
+    this.autoSelectSingleScreen();
+  }
+
+  autoSelectSingleScreen(): void {
+    if (this.screens.length === 1) {
+      this.screens[0].isSelected = true;
+    }
   }
 
   get selectedCount(): number {
@@ -74,6 +89,11 @@ export class AppComponent implements OnInit {
 
   get allSelected(): boolean {
     return this.screens.length > 0 && this.screens.every(s => s.isSelected);
+  }
+
+  toggleScreensSection(): void {
+    if (!this.isUnlocked) return;
+    this.showScreensSection = !this.showScreensSection;
   }
 
   get displayStatusMessage(): string {
@@ -91,10 +111,12 @@ export class AppComponent implements OnInit {
   }
 
   toggleScreenSelection(screen: Screen): void {
+    if (!this.isUnlocked) return;
     screen.isSelected = !screen.isSelected;
   }
 
   selectAllScreens(): void {
+    if (!this.isUnlocked) return;
     const allSelected = this.allSelected;
     this.screens.forEach(screen => screen.isSelected = !allSelected);
   }
@@ -144,33 +166,90 @@ export class AppComponent implements OnInit {
     return colors[content.toLowerCase()] || '#9e9e9e';
   }
 
+  // Password Protection Methods
+  toggleLock(): void {
+    if (this.isUnlocked) {
+      // Si está desbloqueado, solo cerrar sin pedir contraseña
+      this.isUnlocked = false;
+      this.updateStatus('🔒 Modo de edición bloqueado');
+    } else {
+      // Si está bloqueado, pedir contraseña para desbloquear
+      this.pendingAction = () => {
+        this.isUnlocked = true;
+        this.updateStatus('🔓 Modo de edición activado');
+      };
+      this.passwordInput = '';
+      this.passwordError = false;
+      this.showPasswordDialog = true;
+    }
+  }
+
+  requestPassword(action: () => void): void {
+    if (this.isUnlocked) {
+      // Si está desbloqueado, ejecutar directamente
+      action();
+    } else {
+      // Si está bloqueado, pedir contraseña
+      this.pendingAction = action;
+      this.passwordInput = '';
+      this.passwordError = false;
+      this.showPasswordDialog = true;
+    }
+  }
+
+  verifyPassword(): void {
+    if (this.passwordInput === this.PASSWORD) {
+      this.showPasswordDialog = false;
+      this.passwordError = false;
+      if (this.pendingAction) {
+        this.pendingAction();
+        this.pendingAction = null;
+      }
+      this.passwordInput = '';
+    } else {
+      this.passwordError = true;
+      setTimeout(() => {
+        this.passwordError = false;
+      }, 2000);
+    }
+  }
+
   // Screen Dialog Methods
   openAddScreenDialog(): void {
-    this.resetScreenForm();
-    this.showAddScreenDialog = true;
+    this.requestPassword(() => {
+      this.resetScreenForm();
+      this.showAddScreenDialog = true;
+    });
   }
 
   openEditScreenDialog(screen: Screen): void {
-    this.currentScreen = screen;
-    this.screenForm = {
-      id: screen.id,
-      name: screen.name,
-      ip: screen.ip,
-      selectedInitialContent: null
-    };
-    this.showEditScreenDialog = true;
+    this.requestPassword(() => {
+      this.currentScreen = screen;
+      this.screenForm = {
+        id: screen.id,
+        name: screen.name,
+        ip: screen.ip,
+        selectedInitialContent: null
+      };
+      this.showEditScreenDialog = true;
+    });
   }
 
   openDeleteScreenDialog(screen: Screen): void {
-    this.currentScreen = screen;
-    this.showDeleteScreenDialog = true;
+    this.requestPassword(() => {
+      this.currentScreen = screen;
+      this.showDeleteScreenDialog = true;
+    });
   }
 
   openDeleteMultipleDialog(): void {
-    this.showDeleteMultipleDialog = true;
+    this.requestPassword(() => {
+      this.showDeleteMultipleDialog = true;
+    });
   }
 
   closeAllDialogs(): void {
+    this.showPasswordDialog = false;
     this.showAddScreenDialog = false;
     this.showEditScreenDialog = false;
     this.showDeleteScreenDialog = false;
@@ -181,6 +260,9 @@ export class AppComponent implements OnInit {
     this.showReorderContentDialog = false;
     this.currentScreen = null;
     this.currentContent = null;
+    this.passwordInput = '';
+    this.passwordError = false;
+    this.pendingAction = null;
   }
 
   resetScreenForm(): void {
@@ -228,6 +310,7 @@ export class AppComponent implements OnInit {
 
     this.screens.push(newScreen);
     await this.storageService.saveScreens(this.screens);
+    this.autoSelectSingleScreen();
 
     if (this.screenForm.selectedInitialContent) {
       // Buscar el botón de contenido por nombre para obtener su comando
@@ -286,6 +369,7 @@ export class AppComponent implements OnInit {
       const name = this.currentScreen.name;
       this.screens.splice(index, 1);
       await this.storageService.saveScreens(this.screens);
+      this.autoSelectSingleScreen();
       this.updateStatus(`🗑️  Pantalla "${name}" eliminada`);
     }
 
@@ -296,30 +380,39 @@ export class AppComponent implements OnInit {
     const selected = this.selectedScreens;
     this.screens = this.screens.filter(s => !s.isSelected);
     await this.storageService.saveScreens(this.screens);
+    this.autoSelectSingleScreen();
     this.updateStatus(`🗑️  ${selected.length} pantalla${selected.length > 1 ? 's' : ''} eliminada${selected.length > 1 ? 's' : ''}`);
     this.closeAllDialogs();
   }
 
   // Content Dialog Methods
   openAddContentDialog(): void {
-    this.resetContentForm();
-    this.showAddContentDialog = true;
+    this.requestPassword(() => {
+      this.resetContentForm();
+      this.showAddContentDialog = true;
+    });
   }
 
   openEditContentDialog(content: ContentButton): void {
-    this.currentContent = content;
-    this.contentForm = { ...content };
-    this.showEditContentDialog = true;
+    this.requestPassword(() => {
+      this.currentContent = content;
+      this.contentForm = { ...content };
+      this.showEditContentDialog = true;
+    });
   }
 
   openDeleteContentDialog(content: ContentButton): void {
-    this.currentContent = content;
-    this.showDeleteContentDialog = true;
+    this.requestPassword(() => {
+      this.currentContent = content;
+      this.showDeleteContentDialog = true;
+    });
   }
 
   openReorderContentDialog(): void {
-    this.tempContentButtons = [...this.contentButtons];
-    this.showReorderContentDialog = true;
+    this.requestPassword(() => {
+      this.tempContentButtons = [...this.contentButtons];
+      this.showReorderContentDialog = true;
+    });
   }
 
   resetContentForm(): void {
@@ -416,6 +509,7 @@ export class AppComponent implements OnInit {
   }
 
   onScreenLongPress(screen: Screen): void {
+    if (!this.isUnlocked) return;
     if (this.selectedCount > 1) {
       this.openDeleteMultipleDialog();
     } else {
