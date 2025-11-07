@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
+const dgram = require('dgram');
 
 // Mantener una referencia global del objeto window y store
 let mainWindow;
@@ -174,4 +175,33 @@ ipcMain.handle('store-delete', async (event, key) => {
 ipcMain.handle('store-clear', async () => {
   store.clear();
   return true;
+});
+
+// Handler IPC para envío UDP
+ipcMain.handle('udp-send', async (event, { ip, port, message }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      log(`[UDP] Enviando mensaje a ${ip}:${port} - "${message}"`);
+      
+      // Crear socket UDP
+      const socket = dgram.createSocket('udp4');
+      const buffer = Buffer.from(message);
+      
+      // Enviar mensaje
+      socket.send(buffer, 0, buffer.length, port, ip, (err) => {
+        socket.close();
+        
+        if (err) {
+          log(`[UDP] Error al enviar: ${err.message}`);
+          reject({ success: false, error: err.message });
+        } else {
+          log(`[UDP] Mensaje enviado exitosamente`);
+          resolve({ success: true });
+        }
+      });
+    } catch (error) {
+      log(`[UDP] Error inesperado: ${error.message}`);
+      reject({ success: false, error: error.message });
+    }
+  });
 });

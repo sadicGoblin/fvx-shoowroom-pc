@@ -1,33 +1,47 @@
 # FVX Showroom Web
 
-Versión web Angular del proyecto Flutter Showroom UDP Control.
+Versión Electron + Angular del proyecto Flutter Showroom UDP Control para aplicaciones de escritorio.
 
 ## Características
 
+- ✅ **Envío UDP Real**: Implementado con Node.js/Electron (dgram) - **NO es simulación**
 - ✅ **Gestión de Pantallas**: CRUD completo para administrar pantallas con nombre, ID personalizado y validación de IP
 - ✅ **Botones de Contenido**: Crear, editar, eliminar y reordenar botones de contenido personalizables
 - ✅ **Selección Múltiple**: Selecciona múltiples pantallas para enviar contenido en masa
 - ✅ **Contenido Inicial**: Opción para enviar contenido al agregar una nueva pantalla
-- ✅ **Almacenamiento Persistente**: Los datos se guardan automáticamente en localStorage
+- ✅ **Almacenamiento Persistente**: Los datos se guardan automáticamente con electron-store
 - ✅ **Diseño Responsive**: Grid adaptable que muestra 2-4 columnas según el ancho de pantalla
 - ✅ **Interfaz Moderna**: Diseño inspirado en Material Design con animaciones suaves
+- ✅ **Aplicación Nativa**: Empaquetada como app de escritorio (Windows, macOS, Linux)
 
 ## Instalación
 
 ```bash
 # Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
-npm start
-
-# Compilar para producción
-npm run build
 ```
 
-## Uso
+## Ejecución
 
-La aplicación se ejecutará en `http://localhost:4200`
+### Modo Desarrollo
+```bash
+# Opción 1: Electron con hot reload
+npm run electron-dev
+
+# Opción 2: Solo Angular en navegador (UDP simulado)
+npm start  # http://localhost:4200
+```
+
+### Modo Producción
+```bash
+# Compilar y ejecutar
+npm run electron-build
+
+# Empaquetar para distribución
+npm run build-electron  # Windows
+npm run electron:package:mac  # macOS
+npm run electron:package:linux  # Linux
+```
 
 ### Gestión de Pantallas
 
@@ -48,40 +62,41 @@ La aplicación se ejecutará en `http://localhost:4200`
 2. Haz clic en uno de los botones de contenido
 3. El mensaje UDP se enviará a todas las pantallas seleccionadas
 
-## Nota sobre UDP
+## 📡 Implementación UDP
 
-Los navegadores web no pueden enviar mensajes UDP directamente. Esta aplicación simula el envío de mensajes UDP en la consola del navegador.
+### ✅ Envío UDP Real - Completamente Implementado
 
-Para producción, necesitarás:
+Esta aplicación **envía mensajes UDP reales** a través de Electron usando el módulo nativo `dgram` de Node.js.
 
-1. Crear un backend (Node.js, Python, etc.) que pueda enviar UDP
-2. Modificar el servicio `UdpService` para hacer llamadas HTTP a tu backend
-3. El backend procesará las solicitudes y enviará los mensajes UDP reales
-
-Ejemplo de implementación del backend en Node.js:
-
-```javascript
-const dgram = require('dgram');
-const express = require('express');
-const app = express();
-
-app.post('/api/udp/send', (req, res) => {
-  const { ip, port, message } = req.body;
-  const socket = dgram.createSocket('udp4');
-  const buffer = Buffer.from(message);
-  
-  socket.send(buffer, port, ip, (err) => {
-    socket.close();
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.json({ success: true });
-    }
-  });
-});
-
-app.listen(3000);
+**Arquitectura:**
 ```
+Angular UI → IPC → Electron Main Process → dgram (UDP) → Red Local
+```
+
+**Equivalente al proyecto Flutter:**
+- Flutter usa `RawDatagramSocket` de Dart
+- Electron usa `dgram` de Node.js
+- **Ambos funcionan de la misma manera** sin diferencias funcionales
+
+### 🔐 Permisos Necesarios
+
+**En Red Local (LAN): NO se necesitan permisos adicionales**
+
+- ✅ Funciona directo sin configuración
+- ✅ UDP saliente permitido por defecto en la mayoría de sistemas
+- ✅ Sin restricciones en misma red
+
+**Firewall:** Solo en casos específicos puede ser necesario agregar excepción (ver `UDP_IMPLEMENTATION.md`)
+
+### 📝 Documentación Adicional
+
+Para más información sobre la implementación UDP:
+- **`UDP_IMPLEMENTATION.md`** - Detalles técnicos completos
+- **`FLUTTER_VS_ELECTRON.md`** - Comparación entre ambos proyectos
+
+### Backend HTTP Opcional (NO necesario)
+
+El directorio `backend-example/` contiene un servidor HTTP opcional que fue usado anteriormente. **Ya no es necesario** porque el envío UDP está integrado directamente en Electron.
 
 ## Estructura del Proyecto
 
@@ -103,10 +118,12 @@ src/
 
 ## Tecnologías
 
+- **Electron**: Framework para aplicaciones de escritorio multiplataforma
 - **Angular 17**: Framework web con standalone components
+- **Node.js**: Runtime para envío UDP con módulo dgram
 - **TypeScript**: Lenguaje de programación tipado
 - **SCSS**: Preprocesador CSS
-- **localStorage**: Almacenamiento persistente del lado del cliente
+- **electron-store**: Almacenamiento persistente
 
 ## Características Implementadas del Original Flutter
 
@@ -123,17 +140,23 @@ src/
 
 ## Diferencias con la Versión Flutter
 
-1. **UDP**: Simulado en navegador, requiere backend para producción
-2. **Orientación**: No hay bloqueo de orientación (específico de móviles)
-3. **Reordenar**: Usa botones arriba/abajo en lugar de drag-and-drop
-4. **Almacenamiento**: localStorage en lugar de SharedPreferences
+| Característica | Flutter | Electron |
+|---------------|---------|----------|
+| **Plataforma** | Tablet/Móvil | Desktop |
+| **UDP** | ✅ Real (RawDatagramSocket) | ✅ Real (dgram) |
+| **Orientación** | Landscape forzado | Libre |
+| **Reordenar** | Drag & drop | Botones ↑↓ |
+| **Almacenamiento** | SharedPreferences | electron-store |
+| **Logs** | Console | Console + archivo |
+
+**Ambas versiones envían UDP de manera real y equivalente.**
 
 ## Próximas Mejoras Potenciales
 
-- [ ] Backend Node.js para envío UDP real
 - [ ] Estado de conexión en tiempo real
 - [ ] Agrupación de pantallas
 - [ ] Importar/exportar configuración
 - [ ] Historial de mensajes enviados
 - [ ] Programación de envíos
 - [ ] Dark/Light theme toggle
+- [ ] Notificaciones de sistema

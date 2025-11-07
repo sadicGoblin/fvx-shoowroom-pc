@@ -1,30 +1,48 @@
 import { Injectable } from '@angular/core';
 
+// Declaración de tipo para la API de Electron
+declare global {
+  interface Window {
+    electronAPI?: {
+      udp: {
+        send: (ip: string, port: number, message: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      store: any;
+      getScreenOrientation: () => string;
+    };
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UdpService {
   /**
-   * Sends a UDP message to the specified IP and port.
-   * Note: Browsers cannot send UDP directly. This is a simulation.
-   * In production, you would need to:
-   * 1. Create a backend service (Node.js, Python, etc.) that can send UDP
-   * 2. Call that backend via HTTP from this Angular app
-   * 3. The backend would then send the actual UDP message
+   * Envía un mensaje UDP a la IP y puerto especificado.
+   * Usa la API nativa de Electron (dgram de Node.js) para envío real.
    */
   async sendMessage(ip: string, port: number, message: string): Promise<void> {
     try {
-      console.log(`📡 Sending UDP message to ${ip}:${port} - "${message}"`);
-      
-      // In production, replace this with an actual HTTP call to your backend:
-      // return this.http.post('http://your-backend/api/udp/send', { ip, port, message }).toPromise();
-      
-      // Simulating network delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log('✅ UDP message sent successfully');
+      // Verificar si estamos en entorno Electron
+      if (window.electronAPI?.udp) {
+        console.log(`📡 Enviando UDP a ${ip}:${port} - "${message}"`);
+        
+        const result = await window.electronAPI.udp.send(ip, port, message);
+        
+        if (result.success) {
+          console.log('✅ Mensaje UDP enviado exitosamente');
+        } else {
+          throw new Error(result.error || 'Error desconocido al enviar UDP');
+        }
+      } else {
+        // Fallback para desarrollo en navegador
+        console.warn('⚠️ No se detectó Electron API, simulando envío UDP');
+        console.log(`📡 [SIMULADO] Enviando UDP a ${ip}:${port} - "${message}"`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('✅ [SIMULADO] Mensaje enviado');
+      }
     } catch (error) {
-      console.error('❌ Error sending UDP message:', error);
+      console.error('❌ Error enviando mensaje UDP:', error);
       throw error;
     }
   }

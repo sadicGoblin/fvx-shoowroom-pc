@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clear: () => ipcRenderer.invoke('store-clear')
   },
   
+  // Funciones UDP
+  udp: {
+    send: (ip, port, message) => ipcRenderer.invoke('udp-send', { ip, port, message })
+  },
+  
   // Detectar orientación de pantalla directamente
   getScreenOrientation: () => {
     return window.innerHeight > window.innerWidth ? 'vertical' : 'horizontal';
